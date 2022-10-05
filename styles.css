@@ -1,0 +1,36 @@
+*,
+::after,
+::before {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+main {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+}
+.board {
+  background: #c0c0c0;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  border: 0.5rem solid #708090;
+  border-radius: 0.5rem;
+}
+
+.slot {
+  width: 2vw;
+  height: 3vh;
+  background-color: #6082b6;
+  border: 0.05rem solid black;
+  box-sizing: border-box;
+}
+
+.playing {
+  background-color: green;
+}
+.played {
+  background-color: red;
+}
