@@ -24,7 +24,9 @@ function play(time) {
 
   if (delta >= 500) {
     game.draw();
-    game.update();
+    if (!game.ifCollides()) {
+      game.update();
+    }
     prevTime = time;
   }
   window.requestAnimationFrame(play);
@@ -74,6 +76,29 @@ class Board {
       this.placed.push(...temp);
       this.activeShape = [{ row: 1, col: 5 }];
     }
+  }
+  ifCollides() {
+    let control = false;
+    this.activeShape.forEach((element) => {
+      const slotBelow = document.getElementById(
+        `${element.row + 1}${element.col}`
+      );
+      if (
+        this.activeShape.every((item) => item.row < this.totalRow)
+          ? slotBelow.classList.contains("played")
+          : true
+      ) {
+        control = true;
+      }
+    });
+    if (control) {
+      const temp = this.activeShape.map((item) => {
+        return { ...item };
+      });
+      this.placed.push(...temp);
+      this.activeShape = [{ row: 1, col: 5 }];
+    }
+    return control;
   }
 }
 
