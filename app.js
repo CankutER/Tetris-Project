@@ -14,6 +14,9 @@ for (let i = 1; i <= 20; i++) {
 //
 
 // CONTINOUS UPDATE LOGIC
+
+// sync version
+
 function play(time) {
   if (!start) {
     start = time;
@@ -24,14 +27,53 @@ function play(time) {
 
   if (delta >= 400) {
     game.draw();
+
     if (!game.ifCollides()) {
       game.update();
+    } else {
+      console.log("collide");
+      game.ifRemove();
     }
-    game.ifRemove();
+
     prevTime = time;
   }
   window.requestAnimationFrame(play);
 }
+
+//
+
+// async version
+
+// async function play(time) {
+//   if (!start) {
+//     start = time;
+//     prevTime = start;
+//   }
+
+//   const delta = time - prevTime;
+
+//   if (delta >= 400) {
+//     const step = await (async function () {
+//       return new Promise((resolve) => {
+//         setTimeout(() => {
+//           game.draw();
+
+//           if (!game.ifCollides()) {
+//             game.update();
+//           } else {
+//             console.log("collide");
+//             game.ifRemove();
+//           }
+//           prevTime = time;
+//           resolve();
+//         }, 0);
+//       });
+//     })();
+//   }
+//   window.requestAnimationFrame(play);
+// }
+
+//
 
 //
 
@@ -41,24 +83,53 @@ class Board {
   constructor(element) {
     this.element = element;
     this.removeControl = false;
+    this.namesOfShapes = ["line", "square", "Z", "L", "T"];
+    this.possibleShapes = {
+      line: [
+        { row: 1, col: 4 },
+        { row: 1, col: 5 },
+        { row: 1, col: 6 },
+        { row: 1, col: 7 },
+      ],
+      square: [
+        { row: 1, col: 5 },
+        { row: 1, col: 6 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      Z: [
+        { row: 1, col: 4 },
+        { row: 1, col: 5 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      L: [
+        { row: 1, col: 4 },
+        { row: 2, col: 4 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      T: [
+        { row: 1, col: 5 },
+        { row: 2, col: 4 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+    };
     this.prevActiveShape = [];
     this.prevPlaced = [];
     this.beforeMoveDown = [];
-    this.activeShape = [
-      ...(function e() {
-        const arr = new Array(10).fill({}).map((element, i) => {
-          const temp = {};
-          temp.row = 2;
-          temp.col = i + 1;
-
-          return temp;
-        });
-
-        return arr;
-      })(),
-      { row: 1, col: 5 },
-    ];
+    this.activeShape = [];
+    this.chooseShape();
     this.placed = [];
+  }
+  chooseShape() {
+    const nextShapeId = Math.floor(Math.random() * this.namesOfShapes.length);
+    this.activeShape = [
+      ...this.possibleShapes[this.namesOfShapes[nextShapeId]],
+    ].map((item) => {
+      return { ...item };
+    });
   }
   draw() {
     this.prevActiveShape.forEach((piece) => {
@@ -72,6 +143,7 @@ class Board {
       shape.classList.add("playing");
     });
     if (this.removeControl) {
+      console.log("something removed");
       this.prevPlaced.forEach((piece) => {
         const shape = document.getElementById(`${piece.row}${piece.col}`);
 
@@ -87,8 +159,10 @@ class Board {
     }
     this.placed.forEach((piece) => {
       const shape = document.getElementById(`${piece.row}${piece.col}`);
+
       shape.classList.add("played");
     });
+    this.removeControl = false;
   }
   update() {
     this.prevActiveShape = this.activeShape.map((item) => {
@@ -136,26 +210,15 @@ class Board {
         return { ...item };
       });
       this.placed.push(...temp);
-      this.activeShape = [
-        ...(function e() {
-          const arr = new Array(10).fill({}).map((element, i) => {
-            const temp = {};
-            temp.row = 2;
-            temp.col = i + 1;
-
-            return temp;
-          });
-
-          return arr;
-        })(),
-        { row: 1, col: 5 },
-      ];
+      this.chooseShape();
+      console.log(this.activeShape);
     }
     return control;
   }
   ifRemove() {
     // find how many slots are filled in each row
-    const rowStats = this.placed.reduce((stats, curr) => {
+    let rowStats = {};
+    rowStats = this.placed.reduce((stats, curr) => {
       if (stats[curr.row]) {
         stats[curr.row] += 1;
       } else {
@@ -169,8 +232,10 @@ class Board {
     this.removeControl = false;
     for (const row in rowStats) {
       if (rowStats[row] === this.totalCol) {
-        this.removeControl = true;
+        console.log("checking rowstats");
+        console.log(rowStats[row]);
 
+        this.removeControl = true;
         this.prevPlaced = this.placed.map((slot) => {
           return { ...slot };
         });
@@ -192,36 +257,36 @@ class Board {
       this.placed = filteredPlaced.map((item) => {
         return { ...item };
       });
-    }
-    //
+      //
 
-    // finding which rows to be deleted
-    const findRowsToDelete = () => {
-      const tempSet = new Set();
-      for (const row in rowStats) {
-        if (rowStats[row] == this.totalCol) {
-          tempSet.add(row);
-        }
-      }
-      return tempSet;
-    };
-
-    const rowsToBeDeleted = findRowsToDelete();
-    //
-
-    // Moving down after removal
-    this.beforeMoveDown = this.placed.map((item) => {
-      return { ...item };
-    });
-    rowsToBeDeleted.forEach((row) => {
-      this.beforeMoveDown.forEach((slot, i) => {
-        if (slot.row < row) {
-          if (this.placed[i]) {
-            this.placed[i].row = Number(slot.row) + 1;
+      // finding which rows to be deleted
+      const findRowsToDelete = () => {
+        const tempSet = new Set();
+        for (const row in rowStats) {
+          if (rowStats[row] == this.totalCol) {
+            tempSet.add(row);
           }
         }
+        return tempSet;
+      };
+
+      const rowsToBeDeleted = findRowsToDelete();
+      //
+
+      // Moving down after removal
+      this.beforeMoveDown = this.placed.map((item) => {
+        return { ...item };
       });
-    });
+      rowsToBeDeleted.forEach((row) => {
+        this.beforeMoveDown.forEach((slot, i) => {
+          if (slot.row < row) {
+            if (this.placed[i]) {
+              this.placed[i].row = Number(slot.row) + 1;
+            }
+          }
+        });
+      });
+    }
     //
   }
 }
