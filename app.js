@@ -1,6 +1,7 @@
 const board = document.querySelector(".board");
 let start;
 let prevTime;
+let speed = 400;
 
 // CREATE BOARD
 for (let i = 1; i <= 20; i++) {
@@ -14,6 +15,16 @@ for (let i = 1; i <= 20; i++) {
 //
 
 // CONTINOUS UPDATE LOGIC
+window.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowDown") {
+    speed = Math.max(50, speed - speed * 0.15);
+  }
+});
+window.addEventListener("keyup", (e) => {
+  if (e.key === "ArrowDown") {
+    speed = 400;
+  }
+});
 
 // sync version
 
@@ -25,13 +36,12 @@ function play(time) {
 
   const delta = time - prevTime;
 
-  if (delta >= 400) {
+  if (delta >= speed) {
     game.draw();
 
     if (!game.ifCollides()) {
       game.update();
     } else {
-      console.log("collide");
       game.ifRemove();
     }
 
@@ -119,9 +129,52 @@ class Board {
     this.prevActiveShape = [];
     this.prevPlaced = [];
     this.beforeMoveDown = [];
+    this.beforeMoveLateral = [];
     this.activeShape = [];
     this.chooseShape();
     this.placed = [];
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") {
+        const movedRight = this.activeShape.map((item) => {
+          return { ...item, col: item.col + 1 };
+        });
+        if (
+          movedRight.every(
+            (item) =>
+              item.col <= this.totalCol &&
+              !document
+                .getElementById(`${item.row}${item.col}`)
+                .classList.contains("played")
+          )
+        ) {
+          this.beforeMoveLateral = [...this.activeShape];
+          this.activeShape = movedRight.map((item) => {
+            return { ...item };
+          });
+          this.drawActiveShape(this.beforeMoveLateral);
+        }
+      }
+      if (e.key === "ArrowLeft") {
+        const movedLeft = this.activeShape.map((item) => {
+          return { ...item, col: item.col - 1 };
+        });
+        if (
+          movedLeft.every(
+            (item) =>
+              item.col > 0 &&
+              !document
+                .getElementById(`${item.row}${item.col}`)
+                .classList.contains("played")
+          )
+        ) {
+          this.beforeMoveLateral = [...this.activeShape];
+          this.activeShape = movedLeft.map((item) => {
+            return { ...item };
+          });
+          this.drawActiveShape(this.beforeMoveLateral);
+        }
+      }
+    });
   }
   chooseShape() {
     const nextShapeId = Math.floor(Math.random() * this.namesOfShapes.length);
@@ -132,16 +185,7 @@ class Board {
     });
   }
   draw() {
-    this.prevActiveShape.forEach((piece) => {
-      const shape = document.getElementById(`${piece.row}${piece.col}`);
-
-      shape.classList.remove("playing");
-    });
-    this.activeShape.forEach((piece) => {
-      const shape = document.getElementById(`${piece.row}${piece.col}`);
-
-      shape.classList.add("playing");
-    });
+    this.drawActiveShape(this.prevActiveShape);
     if (this.removeControl) {
       console.log("something removed");
       this.prevPlaced.forEach((piece) => {
@@ -159,10 +203,41 @@ class Board {
     }
     this.placed.forEach((piece) => {
       const shape = document.getElementById(`${piece.row}${piece.col}`);
-
+      shape.classList.remove("playing");
       shape.classList.add("played");
     });
     this.removeControl = false;
+  }
+
+  drawActiveShape(previousStep) {
+    if (previousStep === this.prevActiveShape) {
+      this.prevActiveShape.forEach((piece) => {
+        const shape = document.getElementById(`${piece.row}${piece.col}`);
+
+        shape.classList.remove("playing");
+      });
+      this.activeShape.forEach((piece) => {
+        const shape = document.getElementById(`${piece.row}${piece.col}`);
+
+        shape.classList.add("playing");
+      });
+    } else {
+      this.prevActiveShape.forEach((piece) => {
+        const shape = document.getElementById(`${piece.row}${piece.col}`);
+
+        shape.classList.remove("playing");
+      });
+      previousStep.forEach((piece) => {
+        const shape = document.getElementById(`${piece.row}${piece.col}`);
+
+        shape.classList.remove("playing");
+      });
+      this.activeShape.forEach((piece) => {
+        const shape = document.getElementById(`${piece.row}${piece.col}`);
+
+        shape.classList.add("playing");
+      });
+    }
   }
   update() {
     this.prevActiveShape = this.activeShape.map((item) => {
@@ -211,7 +286,6 @@ class Board {
       });
       this.placed.push(...temp);
       this.chooseShape();
-      console.log(this.activeShape);
     }
     return control;
   }
@@ -230,15 +304,15 @@ class Board {
 
     // mark rows to be removed
     this.removeControl = false;
+    this.prevPlaced = this.placed.map((slot) => {
+      return { ...slot };
+    });
     for (const row in rowStats) {
       if (rowStats[row] === this.totalCol) {
         console.log("checking rowstats");
         console.log(rowStats[row]);
 
         this.removeControl = true;
-        this.prevPlaced = this.placed.map((slot) => {
-          return { ...slot };
-        });
 
         this.placed.forEach((slot, i) => {
           if (slot.row == row) {

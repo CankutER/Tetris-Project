@@ -1,0 +1,32 @@
+this.possibleShapes = {
+      line: [
+        { row: 1, col: 4 },
+        { row: 1, col: 5 },
+        { row: 1, col: 6 },
+        { row: 1, col: 7 },
+      ],
+      square: [
+        { row: 1, col: 5 },
+        { row: 1, col: 6 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      Z: [
+        { row: 1, col: 4 },
+        { row: 1, col: 5 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      L: [
+        { row: 1, col: 4 },
+        { row: 2, col: 4 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      T: [
+        { row: 1, col: 5 },
+        { row: 2, col: 4 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+    };
