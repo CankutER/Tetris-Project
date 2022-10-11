@@ -37,12 +37,14 @@ function play(time) {
   const delta = time - prevTime;
 
   if (delta >= speed) {
-    game.draw();
-
-    if (!game.ifCollides()) {
-      game.update();
-    } else {
+    if (game.control) {
+      game.placeAndReset();
       game.ifRemove();
+    }
+    game.draw();
+    game.ifCollides();
+    if (!game.control) {
+      game.update();
     }
 
     prevTime = time;
@@ -92,6 +94,7 @@ class Board {
   totalCol = 10;
   constructor(element) {
     this.element = element;
+    this.control = false;
     this.removeControl = false;
     this.namesOfShapes = ["line", "square", "Z", "L", "T"];
     this.possibleShapes = {
@@ -267,7 +270,6 @@ class Board {
     //
   }
   ifCollides() {
-    let control = false;
     this.activeShape.forEach((element) => {
       const slotBelow = document.getElementById(
         `${element.row + 1}${element.col}`
@@ -277,18 +279,21 @@ class Board {
           ? slotBelow.classList.contains("played")
           : true
       ) {
-        control = true;
+        this.control = true;
       }
     });
-    if (control) {
-      const temp = this.activeShape.map((item) => {
-        return { ...item };
-      });
-      this.placed.push(...temp);
-      this.chooseShape();
-    }
-    return control;
   }
+  //
+  placeAndReset() {
+    const temp = this.activeShape.map((item) => {
+      return { ...item };
+    });
+    this.placed.push(...temp);
+    this.chooseShape();
+    this.control = false;
+  }
+
+  //
   ifRemove() {
     // find how many slots are filled in each row
     let rowStats = {};
