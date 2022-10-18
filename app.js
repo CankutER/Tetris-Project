@@ -97,6 +97,7 @@ class Board {
     this.control = false;
     this.removeControl = false;
     this.namesOfShapes = ["line", "square", "Z", "L", "T"];
+
     this.possibleShapes = {
       line: [
         { row: 1, col: 4 },
@@ -129,6 +130,7 @@ class Board {
         { row: 2, col: 6 },
       ],
     };
+    this.beforeRotate = [];
     this.prevActiveShape = [];
     this.prevPlaced = [];
     this.beforeMoveDown = [];
@@ -136,7 +138,13 @@ class Board {
     this.activeShape = [];
     this.chooseShape();
     this.placed = [];
+    // MOVEMENT LOGIC
     window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp") {
+        this.beforeRotate = [...this.activeShape];
+        this.rotateActive();
+        this.drawActiveShape(this.beforeRotate);
+      }
       if (e.key === "ArrowRight") {
         const movedRight = this.activeShape.map((item) => {
           return { ...item, col: item.col + 1 };
@@ -179,8 +187,10 @@ class Board {
       }
     });
   }
+  //
   chooseShape() {
     const nextShapeId = Math.floor(Math.random() * this.namesOfShapes.length);
+
     this.activeShape = [
       ...this.possibleShapes[this.namesOfShapes[nextShapeId]],
     ].map((item) => {
@@ -212,6 +222,7 @@ class Board {
     this.removeControl = false;
   }
 
+  // METHOD FOR ELIMINATE DRY
   drawActiveShape(previousStep) {
     if (previousStep === this.prevActiveShape) {
       this.prevActiveShape.forEach((piece) => {
@@ -242,6 +253,8 @@ class Board {
       });
     }
   }
+  //
+
   update() {
     this.prevActiveShape = this.activeShape.map((item) => {
       return { ...item };
@@ -269,6 +282,7 @@ class Board {
 
     //
   }
+  // COLLISION CHECK
   ifCollides() {
     this.activeShape.forEach((element) => {
       const slotBelow = document.getElementById(
@@ -284,6 +298,8 @@ class Board {
     });
   }
   //
+
+  // MAKE PLACEMENT AFTER COLLISION CHECK, DECOUPLED FROM IFCOLLISION TO MAKE THIS HAPPEN AT THE NEXT TICK (TO ALLOW LATERAL MOVEMENT JUST BEFORE COLLISION)
   placeAndReset() {
     const temp = this.activeShape.map((item) => {
       return { ...item };
@@ -294,6 +310,8 @@ class Board {
   }
 
   //
+
+  // REMOVAL LOGIC
   ifRemove() {
     // find how many slots are filled in each row
     let rowStats = {};
@@ -351,22 +369,73 @@ class Board {
 
       const rowsToBeDeleted = findRowsToDelete();
       //
-
+      console.log(rowsToBeDeleted);
       // Moving down after removal
-      this.beforeMoveDown = this.placed.map((item) => {
-        return { ...item };
-      });
+
       rowsToBeDeleted.forEach((row) => {
-        this.beforeMoveDown.forEach((slot, i) => {
-          if (slot.row < row) {
-            if (this.placed[i]) {
-              this.placed[i].row = Number(slot.row) + 1;
-            }
+        this.placed.forEach((slot, i) => {
+          if (slot.row < Number(row)) {
+            this.placed[i].row = Number(slot.row) + 1;
           }
         });
       });
+
+      //
     }
     //
+  }
+
+  // ROTATION
+
+  rotateActive() {
+    // choose an anchor point
+    const anchorStats = this.activeShape.map((main) => {
+      let neighbourCount = 0;
+      this.activeShape.forEach((neighbour) => {
+        if (
+          neighbour.col === main.col &&
+          Math.abs(neighbour.row - main.row) === 1
+        ) {
+          neighbourCount++;
+        }
+        if (
+          neighbour.row === main.row &&
+          Math.abs(neighbour.col - main.col) === 1
+        ) {
+          neighbourCount++;
+        }
+      });
+      return neighbourCount;
+    });
+    const anchorId = anchorStats.indexOf(
+      anchorStats.reduce((acc, curr, i) => {
+        if (curr >= acc) {
+          acc = curr;
+        }
+        return acc;
+      })
+    );
+    const anchor = this.activeShape[anchorId];
+    //
+
+    // get differences wrt the anchor
+    const dist = this.activeShape.map((slot) => {
+      return {
+        rowDiff: slot.row - anchor.row,
+        colDiff: slot.col - anchor.col,
+      };
+    });
+
+    //
+    const rotatedShape = this.activeShape.map((slot, i) => {
+      return {
+        row: anchor.row + dist[i].colDiff,
+        col: anchor.col - dist[i].rowDiff,
+      };
+    });
+    // this.activeShape = rotatedShape.map((item) => {
+    //   return { ...item };
+    // });
   }
 }
 
