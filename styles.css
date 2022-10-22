@@ -31,6 +31,7 @@ main {
 .playing {
   background-color: green;
 }
+
 .played {
   background-color: red;
 }

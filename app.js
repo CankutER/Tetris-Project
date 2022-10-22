@@ -458,6 +458,12 @@ class Board {
       }
       return acc;
     }).row;
+    const minRow = rotatedShape.reduce((acc, curr) => {
+      if (acc.row > curr.row) {
+        acc = curr;
+      }
+      return acc;
+    }).row;
     if (minCol < 1 || maxCol > 10 || maxRow > 20) {
       if (minCol < 1) {
         let diff = 1 - minCol;
@@ -541,18 +547,69 @@ class Board {
             })
           ) {
             verticalDiff = 1;
+          } else {
+            if (
+              document
+                .getElementById(
+                  `${collidingSlots[0].row + 1}${collidingSlots[0].col}`
+                )
+                .classList.contains("played")
+            ) {
+              verticalDiff = 1;
+            }
+            if (
+              document
+                .getElementById(
+                  `${collidingSlots[0].row - 1}${collidingSlots[0].col}`
+                )
+                .classList.contains("played")
+            ) {
+              verticalDiff = -1;
+            }
           }
-          //  CONTINUE HERE
+        } else {
+          if (
+            collidingSlots.every((slot) => slot.row === collidingSlots[0].row)
+          ) {
+            if (collidingSlots[0].col > minCol) {
+              horizontalDiff -= collidingSlots.length;
+            }
+            if (collidingSlots[0].col < maxCol) {
+              horizontalDiff += collidingSlots.length;
+            }
+          }
+          if (
+            collidingSlots.every((slot) => slot.col === collidingSlots[0].col)
+          ) {
+            if (collidingSlots[0].row > minRow) {
+              verticalDiff -= collidingSlots.length;
+            }
+            if (collidingSlots[0].row < maxRow) {
+              verticalDiff += collidingSlots.length;
+            }
+          }
         }
       }
     }
     //
 
     //
-
-    this.activeShape = rotatedShape.map((item) => {
-      return { ...item };
-    });
+    if (ifRotatePossible) {
+      const adjustedRotate = rotatedShape.map((slot) => {
+        return { row: slot.row + verticalDiff, col: slot.col + horizontalDiff };
+      });
+      if (
+        !adjustedRotate.some((item) => {
+          return document
+            .getElementById(`${item.row}${item.col}`)
+            .classList.contains("played");
+        })
+      ) {
+        this.activeShape = adjustedRotate.map((item) => {
+          return { ...item };
+        });
+      }
+    }
   }
 }
 
