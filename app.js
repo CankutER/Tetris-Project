@@ -388,6 +388,7 @@ class Board {
   // ROTATION
 
   rotateActive() {
+    let ifRotatePossible = true;
     // choose an anchor point
     const anchorStats = this.activeShape.map((main) => {
       let neighbourCount = 0;
@@ -433,9 +434,125 @@ class Board {
         col: anchor.col - dist[i].rowDiff,
       };
     });
-    // this.activeShape = rotatedShape.map((item) => {
-    //   return { ...item };
-    // });
+
+    // check any constraints for rotation
+
+    let verticalDiff = 0;
+    let horizontalDiff = 0;
+    // checking if rotation pushes out of boundaries
+    const minCol = rotatedShape.reduce((acc, curr) => {
+      if (acc.col > curr.col) {
+        acc = curr;
+      }
+      return acc;
+    }).col;
+    const maxCol = rotatedShape.reduce((acc, curr) => {
+      if (acc.col < curr.col) {
+        acc = curr;
+      }
+      return acc;
+    }).col;
+    const maxRow = rotatedShape.reduce((acc, curr) => {
+      if (acc.row < curr.row) {
+        acc = curr;
+      }
+      return acc;
+    }).row;
+    if (minCol < 1 || maxCol > 10 || maxRow > 20) {
+      if (minCol < 1) {
+        let diff = 1 - minCol;
+        horizontalDiff += diff;
+      }
+      if (maxCol > 10) {
+        let diff = maxCol - 10;
+        horizontalDiff -= diff;
+      }
+      if (maxRow > 20) {
+        let diff = maxRow - 20;
+        verticalDiff -= diff;
+      }
+
+      rotatedShape.forEach((slot) => {
+        if (
+          document
+            .getElementById(
+              `${slot.row + verticalDiff}${slot.col + horizontalDiff}`
+            )
+            .classList.contains("played")
+        ) {
+          ifRotatePossible = false;
+        }
+      });
+    }
+    // check if touches placed elements
+    else {
+      const collidingSlots = rotatedShape.filter((slot) => {
+        if (
+          document
+            .getElementById(`${slot.row}${slot.col}`)
+            .classList.contains("played")
+        ) {
+          return slot;
+        }
+      });
+      if (collidingSlots.length) {
+        if (collidingSlots.length === 1) {
+          if (
+            rotatedShape.every((item) => {
+              if (
+                item.row !== collidingSlots[0].row &&
+                item.col !== collidingSlots[0].col
+              ) {
+                return item.row < collidingSlots[0].row;
+              }
+            })
+          ) {
+            verticalDiff = -1;
+          } else if (
+            rotatedShape.every((item) => {
+              if (
+                item.row !== collidingSlots[0].row &&
+                item.col !== collidingSlots[0].col
+              ) {
+                return item.col < collidingSlots[0].col;
+              }
+            })
+          ) {
+            horizontalDiff = -1;
+          } else if (
+            rotatedShape.every((item) => {
+              if (
+                item.row !== collidingSlots[0].row &&
+                item.col !== collidingSlots[0].col
+              ) {
+                return item.col > collidingSlots[0].col;
+              }
+            })
+          ) {
+            horizontalDiff = 1;
+          } else if (
+            rotatedShape.every((item) => {
+              if (
+                item.row !== collidingSlots[0].row &&
+                item.col !== collidingSlots[0].col
+              ) {
+                return item.row > collidingSlots[0].row;
+              }
+            })
+          ) {
+            verticalDiff = 1;
+          }
+          //  CONTINUE HERE
+        }
+      }
+    }
+    //
+
+    //
+
+    this.activeShape = rotatedShape.map((item) => {
+      return { ...item };
+    });
   }
 }
 
