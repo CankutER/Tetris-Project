@@ -14,7 +14,6 @@ for (let i = 1; i <= 20; i++) {
 }
 //
 
-// CONTINOUS UPDATE LOGIC
 window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown") {
     speed = Math.max(50, speed - speed * 0.15);
@@ -25,6 +24,7 @@ window.addEventListener("keyup", (e) => {
     speed = 400;
   }
 });
+// CONTINOUS UPDATE LOGIC
 
 // sync version
 
@@ -144,6 +144,7 @@ class Board {
         this.beforeRotate = [...this.activeShape];
         this.rotateActive();
         this.drawActiveShape(this.beforeRotate);
+        this.ifCollides();
       }
       if (e.key === "ArrowRight") {
         const movedRight = this.activeShape.map((item) => {
@@ -164,6 +165,7 @@ class Board {
           });
           this.drawActiveShape(this.beforeMoveLateral);
         }
+        this.ifCollides();
       }
       if (e.key === "ArrowLeft") {
         const movedLeft = this.activeShape.map((item) => {
@@ -183,6 +185,7 @@ class Board {
             return { ...item };
           });
           this.drawActiveShape(this.beforeMoveLateral);
+          this.ifCollides();
         }
       }
     });
@@ -284,6 +287,7 @@ class Board {
   }
   // COLLISION CHECK
   ifCollides() {
+    this.control = false;
     this.activeShape.forEach((element) => {
       const slotBelow = document.getElementById(
         `${element.row + 1}${element.col}`
@@ -501,90 +505,125 @@ class Board {
           return slot;
         }
       });
+
       if (collidingSlots.length) {
+        // find boundaries of colliding slots
+        const collidingMinCol = collidingSlots.reduce((acc, curr) => {
+          if (acc.col > curr.col) {
+            acc = curr;
+          }
+          return acc;
+        }).col;
+        const collidingMaxCol = collidingSlots.reduce((acc, curr) => {
+          if (acc.col < curr.col) {
+            acc = curr;
+          }
+          return acc;
+        }).col;
+        const collidingMaxRow = collidingSlots.reduce((acc, curr) => {
+          if (acc.row < curr.row) {
+            acc = curr;
+          }
+          return acc;
+        }).row;
+        const collidingMinRow = collidingSlots.reduce((acc, curr) => {
+          if (acc.row > curr.row) {
+            acc = curr;
+          }
+          return acc;
+        }).row;
+        //
         if (collidingSlots.length === 1) {
+          console.log("1 slot collides");
           if (
             rotatedShape.every((item) => {
               if (
-                item.row !== collidingSlots[0].row &&
-                item.col !== collidingSlots[0].col
+                item.row === collidingSlots[0].row &&
+                item.col === collidingSlots[0].col
               ) {
+                return true;
+              } else {
                 return item.row < collidingSlots[0].row;
               }
             })
           ) {
+            console.log("vertical -1?");
             verticalDiff = -1;
           } else if (
             rotatedShape.every((item) => {
               if (
-                item.row !== collidingSlots[0].row &&
-                item.col !== collidingSlots[0].col
+                item.row === collidingSlots[0].row &&
+                item.col === collidingSlots[0].col
               ) {
+                return true;
+              } else {
                 return item.col < collidingSlots[0].col;
               }
             })
           ) {
+            console.log("horz -1?");
             horizontalDiff = -1;
           } else if (
             rotatedShape.every((item) => {
               if (
-                item.row !== collidingSlots[0].row &&
-                item.col !== collidingSlots[0].col
+                item.row === collidingSlots[0].row &&
+                item.col === collidingSlots[0].col
               ) {
+                return true;
+              } else {
                 return item.col > collidingSlots[0].col;
               }
             })
           ) {
+            console.log("horz +1?");
             horizontalDiff = 1;
           } else if (
             rotatedShape.every((item) => {
               if (
-                item.row !== collidingSlots[0].row &&
-                item.col !== collidingSlots[0].col
+                item.row === collidingSlots[0].row &&
+                item.col === collidingSlots[0].col
               ) {
+                return true;
+              } else {
                 return item.row > collidingSlots[0].row;
               }
             })
           ) {
+            console.log("vertical +1?");
             verticalDiff = 1;
           } else {
+            console.log("not 100% collision");
             if (
-              document
-                .getElementById(
-                  `${collidingSlots[0].row + 1}${collidingSlots[0].col}`
-                )
-                .classList.contains("played")
+              maxCol - collidingSlots[0].col >
+              collidingSlots[0].col - minCol
             ) {
-              verticalDiff = 1;
+              console.log("move right");
+              horizontalDiff = 2;
             }
             if (
-              document
-                .getElementById(
-                  `${collidingSlots[0].row - 1}${collidingSlots[0].col}`
-                )
-                .classList.contains("played")
+              maxCol - collidingSlots[0].col <
+              collidingSlots[0].col - minCol
             ) {
-              verticalDiff = -1;
+              console.log("move left");
+              horizontalDiff = -2;
             }
           }
         } else {
           if (
             collidingSlots.every((slot) => slot.row === collidingSlots[0].row)
           ) {
-            if (collidingSlots[0].col > minCol) {
+            if (collidingMinCol > minCol) {
               horizontalDiff -= collidingSlots.length;
-            }
-            if (collidingSlots[0].col < maxCol) {
+            } else if (collidingMaxCol < maxCol) {
               horizontalDiff += collidingSlots.length;
             }
           }
           if (
             collidingSlots.every((slot) => slot.col === collidingSlots[0].col)
           ) {
-            if (collidingSlots[0].row > minRow) {
+            if (collidingMinRow > minRow) {
               verticalDiff -= collidingSlots.length;
-            }
-            if (collidingSlots[0].row < maxRow) {
+            } else if (collidingMaxRow < maxRow) {
               verticalDiff += collidingSlots.length;
             }
           }
@@ -592,7 +631,7 @@ class Board {
       }
     }
     //
-
+    console.log(verticalDiff, horizontalDiff);
     //
     if (ifRotatePossible) {
       const adjustedRotate = rotatedShape.map((slot) => {
