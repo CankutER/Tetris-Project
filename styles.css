@@ -12,10 +12,23 @@ main {
   place-items: center;
 }
 .board {
+  position: relative;
   background: #c0c0c0;
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(20, 1fr);
+  border: 0.5rem solid #708090;
+  border-radius: 0.5rem;
+}
+.overflow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-0.5rem, -100%);
+  visibility: hidden;
+  background: #c0c0c0;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
   border: 0.5rem solid #708090;
   border-radius: 0.5rem;
 }

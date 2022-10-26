@@ -1,4 +1,5 @@
 const board = document.querySelector(".board");
+const overflow = document.querySelector(".overflow");
 let start;
 let prevTime;
 let speed = 400;
@@ -13,7 +14,14 @@ for (let i = 1; i <= 20; i++) {
   }
 }
 //
-
+// CREATE OVERFLOW PART
+for (let x = 1; x <= 10; x++) {
+  const slot = document.createElement("div");
+  slot.setAttribute("id", `${0}${x}`);
+  slot.classList.add("slot");
+  overflow.appendChild(slot);
+}
+//
 window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowDown") {
     speed = Math.max(50, speed - speed * 0.15);
@@ -130,6 +138,7 @@ class Board {
         { row: 2, col: 6 },
       ],
     };
+    this.endIsClose = false;
     this.beforeRotate = [];
     this.prevActiveShape = [];
     this.prevPlaced = [];
@@ -199,6 +208,12 @@ class Board {
     ].map((item) => {
       return { ...item };
     });
+    this.ifNoSpace();
+    if (this.endIsClose) {
+      this.activeShape.forEach((item, i) => {
+        this.activeShape[i].row -= 1;
+      });
+    }
   }
   draw() {
     this.drawActiveShape(this.prevActiveShape);
@@ -650,6 +665,24 @@ class Board {
       }
     }
   }
+  //
+
+  // check if top rows are getting crowded (to let player move the shape in advance if there is not enough space to put the new shape)
+  ifNoSpace() {
+    console.log("called nospace func");
+    if (this.placed?.length) {
+      if (this.placed.some((item) => item.row <= 3)) {
+        this.endIsClose = true;
+      } else {
+        this.endIsClose = false;
+      }
+    } else {
+      this.endIsClose = false;
+    }
+  }
+  //
+
+  ifGameOver() {}
 }
 
 const game = new Board(board);
