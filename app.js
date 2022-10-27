@@ -1,5 +1,7 @@
 const board = document.querySelector(".board");
 const overflow = document.querySelector(".overflow");
+const modal = document.querySelector(".modal");
+const replay = document.querySelector(".replay");
 let start;
 let prevTime;
 let speed = 400;
@@ -32,6 +34,19 @@ window.addEventListener("keyup", (e) => {
     speed = 400;
   }
 });
+replay.addEventListener("click", () => {
+  const slots = Array.from(document.getElementsByClassName("slot"));
+
+  slots.forEach((slot) => {
+    slot.classList.remove("played");
+    slot.classList.remove("playing");
+  });
+  game.reset();
+
+  modal.classList.remove("show-modal");
+  window.requestAnimationFrame(play);
+});
+
 // CONTINOUS UPDATE LOGIC
 
 // sync version
@@ -45,11 +60,13 @@ function play(time) {
   const delta = time - prevTime;
 
   if (delta >= speed) {
+    console.log("hey");
     if (game.control) {
       game.placeAndReset();
       game.ifRemove();
     }
     game.draw();
+
     game.ifCollides();
     if (!game.control) {
       game.update();
@@ -57,7 +74,11 @@ function play(time) {
 
     prevTime = time;
   }
-  window.requestAnimationFrame(play);
+  if (!game.ifGameOver()) {
+    window.requestAnimationFrame(play);
+  } else {
+    modal.classList.add("show-modal");
+  }
 }
 
 //
@@ -145,8 +166,8 @@ class Board {
     this.beforeMoveDown = [];
     this.beforeMoveLateral = [];
     this.activeShape = [];
-    this.chooseShape();
     this.placed = [];
+    this.chooseShape();
     // MOVEMENT LOGIC
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowUp") {
@@ -154,6 +175,9 @@ class Board {
         this.rotateActive();
         this.drawActiveShape(this.beforeRotate);
         this.ifCollides();
+        if (speed <= 1000) {
+          speed += 100;
+        }
       }
       if (e.key === "ArrowRight") {
         const movedRight = this.activeShape.map((item) => {
@@ -280,7 +304,9 @@ class Board {
     this.activeShape.forEach((piece) => {
       piece.row += 1;
     });
-
+    if (speed > 400) {
+      speed = 400;
+    }
     // REDUNDANT OLD CODE
 
     // this.prevActiveShape = this.activeShape.map((item) => {
@@ -682,9 +708,65 @@ class Board {
   }
   //
 
-  ifGameOver() {}
+  //
+  ifGameOver() {
+    return this.activeShape.some((item) =>
+      document
+        .getElementById(`${item.row}${item.col}`)
+        .classList.contains("played")
+    );
+  }
+  //
+  // reset
+  reset() {
+    this.control = false;
+    this.removeControl = false;
+    this.namesOfShapes = ["line", "square", "Z", "L", "T"];
+
+    this.possibleShapes = {
+      line: [
+        { row: 1, col: 4 },
+        { row: 1, col: 5 },
+        { row: 1, col: 6 },
+        { row: 1, col: 7 },
+      ],
+      square: [
+        { row: 1, col: 5 },
+        { row: 1, col: 6 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      Z: [
+        { row: 1, col: 4 },
+        { row: 1, col: 5 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      L: [
+        { row: 1, col: 4 },
+        { row: 2, col: 4 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+      T: [
+        { row: 1, col: 5 },
+        { row: 2, col: 4 },
+        { row: 2, col: 5 },
+        { row: 2, col: 6 },
+      ],
+    };
+    this.endIsClose = false;
+    this.beforeRotate = [];
+    this.prevActiveShape = [];
+    this.prevPlaced = [];
+    this.beforeMoveDown = [];
+    this.beforeMoveLateral = [];
+    this.activeShape = [];
+    this.placed = [];
+    this.chooseShape();
+  }
 }
 
-const game = new Board(board);
+let game = new Board(board);
 
 window.requestAnimationFrame(play);
